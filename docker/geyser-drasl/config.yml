@@ -1,0 +1,23 @@
+bedrock:
+  address: 0.0.0.0
+  port: 19132
+  clone-remote-port: false
+
+java:
+  address: minecraft
+  port: 25565
+  auth-type: online
+  custom-yggdrasil:
+    enabled: true
+    base-url: https://drasl.example.com
+    allow-password-authentication: true
+    cache-tokens: true
+
+# Only Bedrock usernames listed here can have reusable custom Yggdrasil tokens cached.
+# Passwords are never written to this file or to the token cache.
+saved-user-logins:
+  - BedrockUsernameHere
+
+pending-authentication-timeout: 120
+debug-mode: false
+config-version: 8

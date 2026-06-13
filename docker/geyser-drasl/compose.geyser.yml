@@ -1,0 +1,17 @@
+services:
+  geyser:
+    build:
+      context: ${GEYSER_BUILD_CONTEXT:-../..}
+      dockerfile: ${GEYSER_DOCKERFILE:-docker/geyser-drasl/Dockerfile}
+    image: geyser-drasl:local
+    depends_on:
+      - minecraft
+    ports:
+      - "19132:19132/udp"
+    volumes:
+      - geyser-data:/data
+      - ${GEYSER_CONFIG_FILE:-./geyser-drasl/config.yml}:/data/config.yml:ro
+    restart: unless-stopped
+
+volumes:
+  geyser-data:

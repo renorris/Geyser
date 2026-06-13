@@ -164,6 +164,10 @@ import org.geysermc.geyser.registry.type.BlockMappings;
 import org.geysermc.geyser.registry.type.ItemMappings;
 import org.geysermc.geyser.session.auth.AuthData;
 import org.geysermc.geyser.session.auth.BedrockClientData;
+import org.geysermc.geyser.session.auth.yggdrasil.CustomYggdrasilAuthResult;
+import org.geysermc.geyser.session.auth.yggdrasil.CustomYggdrasilAuthentication;
+import org.geysermc.geyser.session.auth.yggdrasil.CustomYggdrasilAuthenticationException;
+import org.geysermc.geyser.session.auth.yggdrasil.CustomYggdrasilTokenCache;
 import org.geysermc.geyser.session.cache.AdvancementsCache;
 import org.geysermc.geyser.session.cache.BlockBreakHandler;
 import org.geysermc.geyser.session.cache.BookEditCache;
@@ -1061,6 +1065,97 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
         });
     }
 
+    public boolean authenticateWithCustomYggdrasilCache() {
+        CustomYggdrasilAuthentication customYggdrasil = geyser.getCustomYggdrasilAuthentication();
+        if (customYggdrasil == null) {
+            return false;
+        }
+
+        CustomYggdrasilTokenCache.Entry entry = customYggdrasil.cachedLogin(getAuthData().xuid(), bedrockUsername());
+        if (entry == null) {
+            return false;
+        }
+
+        loggingIn = true;
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return customYggdrasil.refresh(entry);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((result, ex) -> {
+            if (closed) {
+                return;
+            }
+            if (ex != null) {
+                customYggdrasil.remove(getAuthData().xuid());
+                loggingIn = false;
+                connect();
+                LoginEncryptionUtils.buildAndShowCustomYggdrasilLoginWindow(this,
+                    "Saved custom Yggdrasil login expired. Sign in again.");
+                return;
+            }
+
+            finishCustomYggdrasilLogin(customYggdrasil, result);
+        });
+        return true;
+    }
+
+    public void authenticateWithCustomYggdrasilPassword(String username, String password) {
+        if (loggedIn) {
+            geyser.getLogger().severe(GeyserLocale.getLocaleStringLog("geyser.auth.already_loggedin", getAuthData().name()));
+            return;
+        }
+
+        CustomYggdrasilAuthentication customYggdrasil = geyser.getCustomYggdrasilAuthentication();
+        if (customYggdrasil == null) {
+            disconnect("Custom Yggdrasil authentication is not configured.");
+            return;
+        }
+        if (username == null || username.isBlank() || password == null || password.isEmpty()) {
+            LoginEncryptionUtils.buildAndShowCustomYggdrasilLoginWindow(this, "Enter both a username and password.");
+            return;
+        }
+
+        loggingIn = true;
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return customYggdrasil.authenticate(username.trim(), password);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }).whenComplete((result, ex) -> {
+            if (closed) {
+                return;
+            }
+            if (ex != null) {
+                loggingIn = false;
+                LoginEncryptionUtils.buildAndShowCustomYggdrasilLoginWindow(this, customYggdrasilFailureMessage(ex));
+                return;
+            }
+
+            finishCustomYggdrasilLogin(customYggdrasil, result);
+        });
+    }
+
+    private void finishCustomYggdrasilLogin(CustomYggdrasilAuthentication customYggdrasil, CustomYggdrasilAuthResult result) {
+        this.protocol = new MinecraftProtocol(result.gameProfile(), result.accessToken());
+        customYggdrasil.save(getAuthData().xuid(), bedrockUsername(), result);
+        try {
+            connectDownstream();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+
+    private static String customYggdrasilFailureMessage(Throwable ex) {
+        Throwable cause = ex instanceof CompletionException && ex.getCause() != null ? ex.getCause() : ex;
+        if (cause instanceof CustomYggdrasilAuthenticationException) {
+            return "Invalid custom Yggdrasil username or password.";
+        }
+        return "Could not authenticate with the custom Yggdrasil server. Try again later.";
+    }
+
     public void authenticateWithMicrosoftCode() {
         authenticateWithMicrosoftCode(false);
     }
@@ -1193,6 +1288,11 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
         }
         // We'll handle this since we have the registry data on hand
         downstream.setFlag(MinecraftConstants.SEND_BLANK_KNOWN_PACKS_RESPONSE, false);
+
+        CustomYggdrasilAuthentication customYggdrasil = geyser.getCustomYggdrasilAuthentication();
+        if (customYggdrasil != null) {
+            downstream.setFlag(MinecraftConstants.SESSION_SERVICE_KEY, customYggdrasil.sessionService());
+        }
 
         // We manually add the default listener to ensure the order of listeners.
         protocol.setUseDefaultListeners(false);

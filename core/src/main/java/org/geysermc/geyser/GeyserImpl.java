@@ -93,6 +93,7 @@ import org.geysermc.geyser.session.GeyserSession;
 import org.geysermc.geyser.session.PendingMicrosoftAuthentication;
 import org.geysermc.geyser.session.SessionDisconnectListener;
 import org.geysermc.geyser.session.SessionManager;
+import org.geysermc.geyser.session.auth.yggdrasil.CustomYggdrasilAuthentication;
 import org.geysermc.geyser.session.cache.RegistryCache;
 import org.geysermc.geyser.skin.FloodgateSkinUploader;
 import org.geysermc.geyser.skin.ProvidedSkins;
@@ -178,6 +179,7 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
     private MetricsBase metrics;
 
     private PendingMicrosoftAuthentication pendingMicrosoftAuthentication;
+    private @Nullable CustomYggdrasilAuthentication customYggdrasilAuthentication;
     @Getter(AccessLevel.NONE)
     private Map<String, String> savedAuthChains;
 
@@ -338,6 +340,7 @@ public class GeyserImpl implements GeyserApi, EventRegistrar {
         }
 
         pendingMicrosoftAuthentication = new PendingMicrosoftAuthentication(config.pendingAuthenticationTimeout());
+        customYggdrasilAuthentication = CustomYggdrasilAuthentication.create(config, bootstrap.getSavedUserLoginsFolder(), logger);
 
         Packets.initGeyser();
 

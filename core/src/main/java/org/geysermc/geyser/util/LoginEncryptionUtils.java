@@ -26,6 +26,7 @@
 package org.geysermc.geyser.util;
 
 import net.raphimc.minecraftauth.msa.model.MsaDeviceCode;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.cloudburstmc.protocol.bedrock.data.auth.AuthPayload;
 import org.cloudburstmc.protocol.bedrock.data.auth.AuthType;
 import org.cloudburstmc.protocol.bedrock.data.auth.CertificateChainPayload;
@@ -35,6 +36,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ServerToClientHandshakePacket;
 import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult;
 import org.cloudburstmc.protocol.bedrock.util.ChainValidationResult.IdentityData;
 import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils;
+import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.form.ModalForm;
 import org.geysermc.cumulus.form.SimpleForm;
 import org.geysermc.cumulus.response.SimpleFormResponse;
@@ -213,6 +215,30 @@ public class LoginEncryptionUtils {
                         .button("%gui.ok")
                         .resultHandler(authenticateOrKickHandler(session))
         );
+    }
+
+    public static void buildAndShowCustomYggdrasilLoginWindow(GeyserSession session, @Nullable String message) {
+        if (session.isLoggedIn()) {
+            return;
+        }
+
+        session.resetTimeParameters();
+
+        CustomForm.Builder builder = CustomForm.builder()
+            .title("Custom Yggdrasil Login");
+        if (message != null && !message.isBlank()) {
+            builder.label(message);
+        }
+        builder.input("Java username", "Username", "")
+            .input("Password", "Password", "")
+            .closedOrInvalidResultHandler(() -> buildAndShowCustomYggdrasilLoginWindow(session, message))
+            .validResultHandler(response -> {
+                String username = response.asInput();
+                String password = response.next();
+                session.authenticateWithCustomYggdrasilPassword(username, password);
+            });
+
+        session.sendForm(builder);
     }
 
     private static BiConsumer<SimpleForm, FormResponseResult<SimpleFormResponse>> authenticateOrKickHandler(GeyserSession session) {

@@ -46,7 +46,13 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
 
                 if (session.remoteServer().authType() == AuthType.ONLINE) {
                     if (!session.isLoggedIn()) {
-                        if (session.getGeyser().config().savedUserLogins().contains(session.bedrockUsername())) {
+                        if (session.getGeyser().getCustomYggdrasilAuthentication() != null) {
+                            if (session.getFormCache().hasFormOpen()) {
+                                session.getFormCache().resendAllForms();
+                            } else {
+                                LoginEncryptionUtils.buildAndShowCustomYggdrasilLoginWindow(session, null);
+                            }
+                        } else if (session.getGeyser().config().savedUserLogins().contains(session.bedrockUsername())) {
                             if (session.getGeyser().authChainFor(session.bedrockUsername()) == null) {
                                 LoginEncryptionUtils.buildAndShowConsentWindow(session);
                             } else {

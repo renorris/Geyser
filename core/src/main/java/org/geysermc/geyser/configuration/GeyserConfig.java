@@ -191,6 +191,13 @@ public interface GeyserConfig {
             return AuthType.ONLINE;
         }
 
+        @Comment("""
+                Optional custom Yggdrasil-compatible authentication for standalone online-mode servers.
+                When enabled, Geyser prompts Bedrock players for a Java username and password and authenticates against
+                the configured auth server instead of using Microsoft OAuth. This is intended for servers such as Drasl.
+                This does not change the remote server auth-type; keep auth-type as "online".""")
+        GeyserCustomYggdrasilConfig customYggdrasil();
+
         void authType(AuthType authType);
         boolean forwardHostname();
 

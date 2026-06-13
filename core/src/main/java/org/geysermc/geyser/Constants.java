@@ -37,12 +37,13 @@ public final class Constants {
     public static final String FLOODGATE_DOWNLOAD_LOCATION = "https://geysermc.org/download#floodgate";
     public static final String GEYSER_DOWNLOAD_LOCATION = "https://geysermc.org/download";
     static final String SAVED_AUTH_CHAINS_FILE = "saved-auth-chains.json";
+    public static final String SAVED_CUSTOM_YGGDRASIL_TOKENS_FILE = "saved-custom-yggdrasil-tokens.json";
 
     public static final String GEYSER_CUSTOM_NAMESPACE = "geyser_custom";
 
     public static final String MINECRAFT_SKIN_SERVER_URL = "https://textures.minecraft.net/texture/";
 
-    public static final int CONFIG_VERSION = 7;
+    public static final int CONFIG_VERSION = 8;
 
     public static final int BSTATS_ID = 5273;
 

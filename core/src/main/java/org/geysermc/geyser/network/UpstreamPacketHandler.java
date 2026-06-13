@@ -265,6 +265,11 @@ public class UpstreamPacketHandler extends LoggingPacketHandler {
                 finishedResourcePackSending = true;
                 if (geyser.config().java().authType() != AuthType.ONLINE) {
                     session.authenticate(session.getAuthData().name());
+                } else if (geyser.getCustomYggdrasilAuthentication() != null) {
+                    if (!session.authenticateWithCustomYggdrasilCache()) {
+                        // We must spawn the white world so we can show the custom Yggdrasil login form.
+                        session.connect();
+                    }
                 } else if (!couldLoginUserByName(session.getAuthData().name())) {
                     // We must spawn the white world
                     session.connect();
