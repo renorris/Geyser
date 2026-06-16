@@ -143,7 +143,6 @@ public class ConfigLoaderTest {
         assertFalse(config.java().customYggdrasil().enabled());
         assertEquals("", config.java().customYggdrasil().baseUrl());
         assertFalse(config.java().customYggdrasil().allowPasswordAuthentication());
-        assertTrue(config.java().customYggdrasil().cacheTokens());
 
         // Verify motd section
         assertEquals("Gayser", config.motd().primaryMotd());
@@ -264,7 +263,6 @@ public class ConfigLoaderTest {
         assertFalse(defaultConfig.java().customYggdrasil().enabled());
         assertEquals("", defaultConfig.java().customYggdrasil().baseUrl());
         assertFalse(defaultConfig.java().customYggdrasil().allowPasswordAuthentication());
-        assertTrue(defaultConfig.java().customYggdrasil().cacheTokens());
 
         File changedFile = tempDirectory.resolve("custom-yggdrasil-changed.yml").toFile();
         Files.writeString(changedFile.toPath(), """
@@ -273,14 +271,12 @@ public class ConfigLoaderTest {
                 enabled: true
                 base-url: https://drasl.example.com
                 allow-password-authentication: true
-                cache-tokens: false
             """);
 
         GeyserConfig changedConfig = new ConfigLoader(changedFile, PlatformType.STANDALONE).load0(GeyserRemoteConfig.class);
         assertTrue(changedConfig.java().customYggdrasil().enabled());
         assertEquals("https://drasl.example.com", changedConfig.java().customYggdrasil().baseUrl());
         assertTrue(changedConfig.java().customYggdrasil().allowPasswordAuthentication());
-        assertFalse(changedConfig.java().customYggdrasil().cacheTokens());
     }
 
     @Test

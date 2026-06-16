@@ -193,8 +193,9 @@ public interface GeyserConfig {
 
         @Comment("""
                 Optional custom Yggdrasil-compatible authentication for standalone online-mode servers.
-                When enabled, Geyser prompts Bedrock players for a Java username and password and authenticates against
-                the configured auth server instead of using Microsoft OAuth. This is intended for servers such as Drasl.
+                When enabled, Geyser maps each Bedrock XUID to the custom Yggdrasil account selected during the first
+                password login, then refreshes that saved token on later logins. Passwords are never saved.
+                This is intended for servers such as Drasl.
                 This does not change the remote server auth-type; keep auth-type as "online".""")
         GeyserCustomYggdrasilConfig customYggdrasil();
 

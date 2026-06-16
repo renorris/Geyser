@@ -38,7 +38,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +57,7 @@ public final class CustomYggdrasilTokenCache {
         this.entries = new ConcurrentHashMap<>(entries);
     }
 
-    public static CustomYggdrasilTokenCache load(Path folder, String baseUrl, List<String> savedUserLogins, GeyserLogger logger) {
+    public static CustomYggdrasilTokenCache load(Path folder, String baseUrl, GeyserLogger logger) {
         Path file = folder.resolve(Constants.SAVED_CUSTOM_YGGDRASIL_TOKENS_FILE);
         Map<String, Entry> loaded = new ConcurrentHashMap<>();
 
@@ -67,9 +66,10 @@ public final class CustomYggdrasilTokenCache {
                 Map<String, Entry> parsed = GeyserImpl.GSON.fromJson(reader, CACHE_TYPE);
                 if (parsed != null) {
                     for (Map.Entry<String, Entry> entry : parsed.entrySet()) {
+                        String xuid = entry.getKey();
                         Entry value = entry.getValue();
-                        if (value != null && value.isUsableFor(baseUrl) && savedUserLogins.contains(value.bedrockUsername())) {
-                            loaded.put(entry.getKey(), value);
+                        if (xuid != null && !xuid.isBlank() && value != null && value.isUsableFor(baseUrl)) {
+                            loaded.put(xuid, value);
                         }
                     }
                     if (loaded.size() != parsed.size()) {
@@ -87,6 +87,9 @@ public final class CustomYggdrasilTokenCache {
     }
 
     public Entry get(String xuid) {
+        if (xuid == null || xuid.isBlank()) {
+            return null;
+        }
         Entry entry = entries.get(xuid);
         if (entry == null || !entry.isUsableFor(baseUrl)) {
             return null;
@@ -95,6 +98,9 @@ public final class CustomYggdrasilTokenCache {
     }
 
     public void put(String xuid, String bedrockUsername, CustomYggdrasilAuthResult result) {
+        if (xuid == null || xuid.isBlank()) {
+            return;
+        }
         Entry entry = Entry.fromResult(baseUrl, bedrockUsername, result);
         if (!Objects.equals(entries.put(xuid, entry), entry)) {
             write();
@@ -102,6 +108,9 @@ public final class CustomYggdrasilTokenCache {
     }
 
     public void remove(String xuid) {
+        if (xuid == null || xuid.isBlank()) {
+            return;
+        }
         if (entries.remove(xuid) != null) {
             write();
         }

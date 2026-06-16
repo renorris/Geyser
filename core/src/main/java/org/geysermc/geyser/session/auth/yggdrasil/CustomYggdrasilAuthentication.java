@@ -32,7 +32,6 @@ import org.geysermc.geyser.configuration.GeyserConfig;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.UUID;
 
 public final class CustomYggdrasilAuthentication {
@@ -40,17 +39,15 @@ public final class CustomYggdrasilAuthentication {
     private final CustomYggdrasilClient client;
     private final CustomYggdrasilTokenCache cache;
     private final CustomYggdrasilSessionService sessionService;
-    private final boolean cacheTokens;
-    private final List<String> savedUserLogins;
+    private final boolean allowPasswordAuthentication;
 
     CustomYggdrasilAuthentication(CustomYggdrasilUrls urls, CustomYggdrasilClient client, CustomYggdrasilTokenCache cache,
-                                  boolean cacheTokens, List<String> savedUserLogins) {
+                                  boolean allowPasswordAuthentication) {
         this.urls = urls;
         this.client = client;
         this.cache = cache;
         this.sessionService = new CustomYggdrasilSessionService(urls);
-        this.cacheTokens = cacheTokens;
-        this.savedUserLogins = savedUserLogins;
+        this.allowPasswordAuthentication = allowPasswordAuthentication;
     }
 
     public static CustomYggdrasilAuthentication create(GeyserConfig config, Path savedUserLoginsFolder, GeyserLogger logger) {
@@ -58,16 +55,12 @@ public final class CustomYggdrasilAuthentication {
         if (config.java().authType() != AuthType.ONLINE || !customConfig.enabled()) {
             return null;
         }
-        if (!customConfig.allowPasswordAuthentication()) {
-            throw new IllegalStateException("java.custom-yggdrasil is enabled, but allow-password-authentication is false");
-        }
 
         CustomYggdrasilUrls urls = CustomYggdrasilUrls.fromBaseUrl(customConfig.baseUrl());
-        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(savedUserLoginsFolder, urls.normalizedBaseUrl(),
-            config.savedUserLogins(), logger);
+        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(savedUserLoginsFolder, urls.normalizedBaseUrl(), logger);
         logger.info("Custom Yggdrasil authentication enabled for " + urls.normalizedBaseUrl());
-        return new CustomYggdrasilAuthentication(urls, new CustomYggdrasilClient(urls), cache, customConfig.cacheTokens(),
-            List.copyOf(config.savedUserLogins()));
+        return new CustomYggdrasilAuthentication(urls, new CustomYggdrasilClient(urls), cache,
+            customConfig.allowPasswordAuthentication());
     }
 
     public CustomYggdrasilAuthResult authenticate(String username, String password) throws IOException {
@@ -78,28 +71,20 @@ public final class CustomYggdrasilAuthentication {
         return client.refresh(entry.accessToken(), entry.clientToken(), entry.profile());
     }
 
-    public CustomYggdrasilTokenCache.Entry cachedLogin(String xuid, String bedrockUsername) {
-        if (!canCache(bedrockUsername)) {
-            cache.remove(xuid);
-            return null;
-        }
+    public CustomYggdrasilTokenCache.Entry cachedLogin(String xuid) {
         return cache.get(xuid);
     }
 
     public void save(String xuid, String bedrockUsername, CustomYggdrasilAuthResult result) {
-        if (canCache(bedrockUsername)) {
-            cache.put(xuid, bedrockUsername, result);
-        } else {
-            cache.remove(xuid);
-        }
+        cache.put(xuid, bedrockUsername, result);
     }
 
     public void remove(String xuid) {
         cache.remove(xuid);
     }
 
-    public boolean canCache(String bedrockUsername) {
-        return cacheTokens && savedUserLogins.contains(bedrockUsername);
+    public boolean allowPasswordAuthentication() {
+        return allowPasswordAuthentication;
     }
 
     public CustomYggdrasilSessionService sessionService() {

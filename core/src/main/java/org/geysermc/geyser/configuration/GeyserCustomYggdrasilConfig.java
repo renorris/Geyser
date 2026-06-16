@@ -47,12 +47,6 @@ public final class GeyserCustomYggdrasilConfig {
     @DefaultBoolean(false)
     private boolean allowPasswordAuthentication;
 
-    @Comment("""
-            Whether successful custom Yggdrasil logins may cache refreshable token data.
-            Passwords are never cached. The existing saved-user-logins list still controls which Bedrock usernames may be cached.""")
-    @DefaultBoolean(true)
-    private boolean cacheTokens = true;
-
     public boolean enabled() {
         return enabled;
     }
@@ -63,9 +57,5 @@ public final class GeyserCustomYggdrasilConfig {
 
     public boolean allowPasswordAuthentication() {
         return allowPasswordAuthentication;
-    }
-
-    public boolean cacheTokens() {
-        return cacheTokens;
     }
 }

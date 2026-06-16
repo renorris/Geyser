@@ -74,7 +74,7 @@ class CustomYggdrasilTokenCacheTest {
             }
             """.formatted(PROFILE_ID));
 
-        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, List.of("BedrockUser"), new TestLogger());
+        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, new TestLogger());
 
         assertNotNull(cache.get("123"));
         assertEquals(1, cache.size());
@@ -85,14 +85,14 @@ class CustomYggdrasilTokenCacheTest {
         Files.writeString(cacheFile(), "not-json");
         TestLogger logger = new TestLogger();
 
-        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, List.of("BedrockUser"), logger);
+        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, logger);
 
         assertEquals(0, cache.size());
         assertTrue(logger.messages.stream().anyMatch(message -> message.contains("Ignoring corrupt custom Yggdrasil token cache")));
     }
 
     @Test
-    void purgesCacheEntriesRemovedFromSavedUserLoginsAllowlist() throws Exception {
+    void purgesEntriesForDifferentCustomYggdrasilServer() throws Exception {
         Files.writeString(cacheFile(), """
             {
               "allowed-xuid": {
@@ -104,9 +104,9 @@ class CustomYggdrasilTokenCacheTest {
                 "clientToken": "allowed-client",
                 "lastRefreshed": "2026-06-13T00:00:00Z"
               },
-              "removed-xuid": {
-                "baseUrl": "https://drasl.example.com",
-                "bedrockUsername": "RemovedBedrock",
+              "wrong-server-xuid": {
+                "baseUrl": "https://other.example.com",
+                "bedrockUsername": "OtherBedrock",
                 "javaUsername": "RemovedJava",
                 "profileId": "%s",
                 "accessToken": "removed-token",
@@ -116,19 +116,31 @@ class CustomYggdrasilTokenCacheTest {
             }
             """.formatted(PROFILE_ID, PROFILE_ID));
 
-        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, List.of("AllowedBedrock"), new TestLogger());
+        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, new TestLogger());
 
         assertNotNull(cache.get("allowed-xuid"));
-        assertNull(cache.get("removed-xuid"));
+        assertNull(cache.get("wrong-server-xuid"));
         String rewritten = Files.readString(cacheFile());
-        assertFalse(rewritten.contains("RemovedBedrock"));
+        assertFalse(rewritten.contains("OtherBedrock"));
         assertFalse(rewritten.contains("removed-token"));
+    }
+
+    @Test
+    void savesLoginWithoutSavedUserLoginsAllowlist() {
+        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, new TestLogger());
+        CustomYggdrasilAuthentication auth = new CustomYggdrasilAuthentication(CustomYggdrasilUrls.fromBaseUrl(BASE_URL),
+            new CustomYggdrasilClient(CustomYggdrasilUrls.fromBaseUrl(BASE_URL)), cache, true);
+
+        auth.save("123", "BedrockUser", new CustomYggdrasilAuthResult("access-token", "client-token",
+            new CustomYggdrasilProfile(PROFILE_ID, "JavaPlayer")));
+
+        assertNotNull(auth.cachedLogin("123"));
     }
 
     @Test
     void doesNotSerializePasswords() throws Exception {
         String password = "this-password-must-not-be-written";
-        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, List.of("BedrockUser"), new TestLogger());
+        CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, BASE_URL, new TestLogger());
 
         cache.put("123", "BedrockUser", new CustomYggdrasilAuthResult("access-token", "client-token",
             new CustomYggdrasilProfile(PROFILE_ID, "JavaPlayer")));
@@ -153,13 +165,13 @@ class CustomYggdrasilTokenCacheTest {
             String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
             CustomYggdrasilUrls urls = CustomYggdrasilUrls.fromBaseUrl(baseUrl);
             CustomYggdrasilTokenCache cache = CustomYggdrasilTokenCache.load(tempDirectory, urls.normalizedBaseUrl(),
-                List.of("BedrockUser"), new TestLogger());
+                new TestLogger());
             cache.put("123", "BedrockUser", new CustomYggdrasilAuthResult("old-access-token", "client-token",
                 new CustomYggdrasilProfile(PROFILE_ID, "JavaPlayer")));
             CustomYggdrasilAuthentication auth = new CustomYggdrasilAuthentication(urls, new CustomYggdrasilClient(urls), cache,
-                true, List.of("BedrockUser"));
+                true);
 
-            CustomYggdrasilTokenCache.Entry entry = auth.cachedLogin("123", "BedrockUser");
+            CustomYggdrasilTokenCache.Entry entry = auth.cachedLogin("123");
             assertNotNull(entry);
             CustomYggdrasilAuthResult refreshed = auth.refresh(entry);
             auth.save("123", "BedrockUser", refreshed);

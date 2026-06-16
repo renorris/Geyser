@@ -47,7 +47,9 @@ public class BedrockSetLocalPlayerAsInitializedTranslator extends PacketTranslat
                 if (session.remoteServer().authType() == AuthType.ONLINE) {
                     if (!session.isLoggedIn()) {
                         if (session.getGeyser().getCustomYggdrasilAuthentication() != null) {
-                            if (session.getFormCache().hasFormOpen()) {
+                            if (!session.getGeyser().getCustomYggdrasilAuthentication().allowPasswordAuthentication()) {
+                                session.disconnect("No saved custom Yggdrasil login was found for this Bedrock account.");
+                            } else if (session.getFormCache().hasFormOpen()) {
                                 session.getFormCache().resendAllForms();
                             } else {
                                 LoginEncryptionUtils.buildAndShowCustomYggdrasilLoginWindow(session, null);

@@ -11,12 +11,9 @@ java:
     enabled: true
     base-url: https://drasl.example.com
     allow-password-authentication: true
-    cache-tokens: true
 
-# Only Bedrock usernames listed here can have reusable custom Yggdrasil tokens cached.
-# Passwords are never written to this file or to the token cache.
-saved-user-logins:
-  - BedrockUsernameHere
+# Custom Yggdrasil automatically saves a refreshable token for each Bedrock XUID
+# after the first successful password login. Passwords are never written to disk.
 
 pending-authentication-timeout: 120
 debug-mode: false

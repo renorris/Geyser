@@ -1071,7 +1071,7 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
             return false;
         }
 
-        CustomYggdrasilTokenCache.Entry entry = customYggdrasil.cachedLogin(getAuthData().xuid(), bedrockUsername());
+        CustomYggdrasilTokenCache.Entry entry = customYggdrasil.cachedLogin(getAuthData().xuid());
         if (entry == null) {
             return false;
         }
@@ -1090,6 +1090,10 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
             if (ex != null) {
                 customYggdrasil.remove(getAuthData().xuid());
                 loggingIn = false;
+                if (!customYggdrasil.allowPasswordAuthentication()) {
+                    disconnect("Saved custom Yggdrasil login expired, and password authentication is disabled.");
+                    return;
+                }
                 connect();
                 LoginEncryptionUtils.buildAndShowCustomYggdrasilLoginWindow(this,
                     "Saved custom Yggdrasil login expired. Sign in again.");
@@ -1110,6 +1114,10 @@ public class GeyserSession implements GeyserConnection, GeyserCommandSource {
         CustomYggdrasilAuthentication customYggdrasil = geyser.getCustomYggdrasilAuthentication();
         if (customYggdrasil == null) {
             disconnect("Custom Yggdrasil authentication is not configured.");
+            return;
+        }
+        if (!customYggdrasil.allowPasswordAuthentication()) {
+            disconnect("Custom Yggdrasil password authentication is disabled, and no saved login was available for this Bedrock account.");
             return;
         }
         if (username == null || username.isBlank() || password == null || password.isEmpty()) {
