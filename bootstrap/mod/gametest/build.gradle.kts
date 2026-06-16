@@ -22,6 +22,7 @@ dependencies {
     api(libs.fabric.api)
     api(project(":mod"))
     implementation(libs.cloud.fabric)
+    implementation(libs.fabric.permission.api)
 }
 
 relocate("org.cloudburstmc.netty")

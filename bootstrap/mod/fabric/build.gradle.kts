@@ -47,6 +47,7 @@ dependencies {
     shadowBundle(projects.common)
 
     implementation(libs.cloud.fabric)
+    implementation(libs.fabric.permission.api)
     include(libs.cloud.fabric)
     include(libs.fabric.permissions.api)
 }
